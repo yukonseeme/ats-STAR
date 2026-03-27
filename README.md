@@ -79,7 +79,7 @@ This will start the frontend at **http://localhost:5173** (default Vite port).
 
 ```bash
 # Backend
-mvn spring-boot:run
+
 
 # Frontend
 cd frontend && npm install && npm run dev
