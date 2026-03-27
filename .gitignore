@@ -13,6 +13,9 @@ target/
 *.iml
 *.ipr
 
+# Protect our API Keys and Passwords
+src/main/resources/application-local.properties
+
 ### Eclipse ###
 .apt_generated
 .classpath

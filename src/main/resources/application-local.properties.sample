@@ -1,0 +1,5 @@
+# Your Secret Supabase Password
+spring.datasource.password=your_super_secret_supabase_password
+
+# Your OpenAI API Key
+spring.ai.openai.api-key=sk-proj-xxxxxxxxxxxxxxxxx
