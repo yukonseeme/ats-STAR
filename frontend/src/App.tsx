@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import * as pdfjsLib from 'pdfjs-dist'
 
-// Set up the worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+// This tells Vite to package and load the worker correctly for your local development server
+import PDFWorker from 'pdfjs-dist/build/pdf.worker.mjs?worker'
+pdfjsLib.GlobalWorkerOptions.workerSrc = ''
 
 interface AnalysisResults {
   score: number
@@ -16,9 +17,10 @@ interface AnalysisResults {
 
 function App() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [fileUrl, setFileUrl] = useState<string | null>(null)
   const [view, setView] = useState<'upload' | 'results'>('upload')
   const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [activeTab, setActiveTab] = useState<'overview' | 'parsed'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'parsed' | 'pdf'>('overview')
   const [analysisResults, setAnalysisResults] = useState<AnalysisResults>({
     score: 0,
     feedback: [],
@@ -28,7 +30,19 @@ function App() {
     keywords: []
   })
 
+  // Clean up Object URL to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (fileUrl) URL.revokeObjectURL(fileUrl)
+    }
+  }, [fileUrl])
+
   const extractTextFromPDF = async (file: File): Promise<string> => {
+    // Dynamically assign the Vite-compiled worker instance for this extraction task
+    if (!pdfjsLib.GlobalWorkerOptions.workerPort) {
+      pdfjsLib.GlobalWorkerOptions.workerPort = new PDFWorker()
+    }
+
     const arrayBuffer = await file.arrayBuffer()
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
     let fullText = ''
@@ -46,7 +60,6 @@ function App() {
   }
 
   const analyzeResumeText = (text: string) => {
-    // Basic keyword detection
     const keywords = [
       'JavaScript', 'TypeScript', 'React', 'Python', 'Java', 'SQL',
       'leadership', 'team', 'managed', 'developed', 'implemented',
@@ -57,21 +70,18 @@ function App() {
       text.toLowerCase().includes(keyword.toLowerCase())
     )
 
-    // Check for quantifiable achievements (numbers + %)
     const hasMetrics = /\d+%|\d+\+|increased by \d+|reduced by \d+/i.test(text)
     
-    // Check for action verbs
     const actionVerbs = ['developed', 'led', 'managed', 'created', 'implemented', 'designed']
     const hasActionVerbs = actionVerbs.some(verb => 
       text.toLowerCase().includes(verb.toLowerCase())
     )
 
-    // Calculate score
-    let score = 50 // base score
-    score += foundKeywords.length * 3 // +3 per keyword found
+    let score = 50
+    score += foundKeywords.length * 3
     score += hasMetrics ? 15 : 0
     score += hasActionVerbs ? 10 : 0
-    score = Math.min(score, 100) // cap at 100
+    score = Math.min(score, 100)
 
     const strengths: string[] = []
     const improvements: string[] = []
@@ -97,7 +107,6 @@ function App() {
       improvements.push('Use more action verbs at the start of bullet points')
     }
 
-    // Check resume length
     const wordCount = text.split(/\s+/).length
     if (wordCount < 200) {
       improvements.push('Resume seems too short - consider adding more details')
@@ -120,6 +129,9 @@ function App() {
     const file = event.target.files?.[0]
     if (file && file.type === 'application/pdf') {
       setUploadedFile(file)
+      
+      if (fileUrl) URL.revokeObjectURL(fileUrl)
+      setFileUrl(URL.createObjectURL(file))
     } else {
       alert('Please upload a PDF file')
     }
@@ -131,10 +143,7 @@ function App() {
     setIsAnalyzing(true)
     
     try {
-      // Extract text from PDF
       const extractedText = await extractTextFromPDF(uploadedFile)
-      
-      // Analyze the text
       const analysis = analyzeResumeText(extractedText)
 
       setAnalysisResults({
@@ -196,7 +205,7 @@ function App() {
             <div className="section">
               <h4>💬 Ask AI</h4>
               <div className="prompt-input">
-                <input type="text" placeholder="How can I improve?" />
+                <input type="text" placeholder="'How can I improve?'" />
                 <button>→</button>
               </div>
             </div>
@@ -222,11 +231,17 @@ function App() {
                 >
                   Parsed Text
                 </button>
+                <button 
+                  className={`tab ${activeTab === 'pdf' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('pdf')}
+                >
+                  View PDF
+                </button>
               </div>
             </div>
 
             <div className="analysis-content">
-              {activeTab === 'overview' ? (
+              {activeTab === 'overview' && (
                 <>
                   <section className="analysis-section strengths">
                     <h4>✅ Strengths</h4>
@@ -281,7 +296,9 @@ function App() {
                     </p>
                   </div>
                 </>
-              ) : (
+              )}
+
+              {activeTab === 'parsed' && (
                 <section className="parsed-text-section">
                   <div className="text-controls">
                     <button 
@@ -301,6 +318,21 @@ function App() {
                       <p className="empty-state">No text could be extracted from the PDF</p>
                     )}
                   </div>
+                </section>
+              )}
+
+              {/* PDF Tab Segment Display */}
+              {activeTab === 'pdf' && (
+                <section className="pdf-view-panel">
+                  {fileUrl ? (
+                    <iframe 
+                      src={fileUrl} 
+                      title="Uploaded Document View" 
+                      className="pdf-iframe"
+                    />
+                  ) : (
+                    <p className="empty-state">No PDF document loaded reference.</p>
+                  )}
                 </section>
               )}
             </div>
