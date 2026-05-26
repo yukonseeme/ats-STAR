@@ -1,0 +1,30 @@
+Qualification
+This posting is for walk in candidates in Cybergate and Gateway Recruitment Hubs for Entry Level Technology.
+
+What We’re Looking For
+
+Amenable to work in Manila office locations.
+You must already possess the appropriate visas and/or work permits required to live and work in the country the job is based. Do not apply until you have confirmed these authorizations are in place, or the job description states that international applicants will be considered.
+A. Functional Development
+
+Open to any course
+Graduate of Finance, Management, Computer Science, Engineering or Mathematics is an advantage
+Willing to be trained in any programming language / skill
+Likes configuring, maintaining and enhancing current features and functionalities of the system
+B. Application Development
+
+Graduate of Computer Science, Software Development or any programming-related course
+Likes programming or developing software applications
+Knowledgeable about any of the following programming languages: Java, C, C++, C#, VB.Net, UNIX Shell Scripting, Oracle, Peoplesoft, SAP and Salesforce
+C. Analytics
+
+Graduate of Mathematics, Statistics or any related course
+Interested in Data Science, infographics and reports
+D. Software Tester
+
+Graduate of Industrial Engineering or related course
+Interest in software testing, debugging and quality assurance
+D. IT Operations Associate
+
+Graduate of Electronics & Communications Engineering, Computer Engineering, Computer Science or other IT-related course
+Interest and knowledge in IT systems, servers, network, Cloud and database support and administration work

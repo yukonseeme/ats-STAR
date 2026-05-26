@@ -23,15 +23,21 @@ public class ResumeTest implements CommandLineRunner {
         System.out.println("=== Starting Resume ETL Test ===");
 
         // Make sure this filename matches exactly what is in src/main/resources
-        ClassPathResource pdfFile = new ClassPathResource("Manalansang_Resume.pdf");
+        ClassPathResource resumeFile = new ClassPathResource("MANALANSANG - RESUME.pdf");
+        ClassPathResource jobDescription = new ClassPathResource("Job_Description.txt");
 
-        if (!pdfFile.exists()) {
-            System.err.println("Error: File 'Manalansang_Resume.pdf' not found in resources!");
+
+
+        if (!resumeFile.exists() || !jobDescription.exists()) {
+            System.err.println("Error: File 'Manalansang_Resume.pdf' or Job Description not found in resources!");
             return;
         }
 
+
+
         // 3. Use the new method name we wrote in EtlService
-        List<Document> chunks = etlService.processResumeForAnalysis(pdfFile);
+        List<Document> chunks = etlService.processResumeForAnalysis(resumeFile);
+        String analysisResult = etlService.compareResumeToJobDescription(resumeFile, jobDescription);
 
         System.out.println("ETL Successful!");
         System.out.println("Total Chunks Created: " + chunks.size());
@@ -41,5 +47,7 @@ public class ResumeTest implements CommandLineRunner {
             System.out.println(chunks.get(i).getContent());
             System.out.println("---------------------------------------------------");
         }
+
+        System.out.println(analysisResult);
     }
 }
