@@ -1,5 +1,11 @@
-# Your Secret Supabase Password
-spring.datasource.password=your_super_secret_supabase_password
+# application.properties
+spring.datasource.password=${SUPABASE_DB_PASSWORD}
 
-# Your OpenAI API Key
-spring.ai.openai.api-key=sk-proj-xxxxxxxxxxxxxxxxx
+
+spring.ai.openai.base-url=https://generativelanguage.googleapis.com/v1beta/openai
+spring.ai.openai.chat.completions-path=/chat/completions
+
+#  gemini API key
+spring.ai.openai.api-key=
+# gemini model
+spring.ai.openai.chat.options.model=gemini-2.5-flash
