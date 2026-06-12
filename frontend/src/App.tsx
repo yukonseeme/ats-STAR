@@ -159,32 +159,71 @@ function App() {
     if (fileInput) fileInput.value = ''
   }
 
-  const analyzeResume = async () => {
+const analyzeResume = async () => {
     if (!uploadedFile) return
     setIsAnalyzing(true)
+
     try {
-      const extractedText = await extractTextFromPDF(uploadedFile)
-      const jobDesc = jobDescription || ''
-      const analysis = analyzeResumeText(extractedText, jobDesc)
-      setAnalysisResults({
-        ...analysis,
-        parsedText: extractedText,
-        // --- BACKEND INTEGRATION POINT ---
-        // Replace the fields below with actual Gemini API response data:
-        // optimizedText: geminiResponse.optimizedResume,
-        // changesApplied: geminiResponse.changesApplied,
-        // keywordsAdded: geminiResponse.keywordsAdded,
-        // furtherSuggestions: geminiResponse.furtherSuggestions,
-        optimizedText: '',
-        changesApplied: [],
-        keywordsAdded: [],
-        furtherSuggestions: [],
+      // 1. Create the Multipart Form-Data Container
+      const formData = new FormData()
+
+      // Append the primary resume PDF file binary
+      formData.append('resume', uploadedFile)
+
+      // 2. Handle the Job Description Payload
+      if (jobDescription.trim()) {
+        // If text is written, convert the string into a virtual Text File Blob on the fly
+        const jdBlob = new Blob([jobDescription], { type: 'text/plain' })
+        formData.append('jobDescription', jdBlob, 'job_description.txt')
+      } else if (jobDescriptionImage) {
+        // If a file screenshot is uploaded instead, pass that file stream down the pipeline
+        formData.append('jobDescription', jobDescriptionImage)
+      } else {
+        // Fallback placeholder file so the Spring Boot constructor parameter doesn't crash
+        const emptyBlob = new Blob(['Empty Job Description'], { type: 'text/plain' })
+        formData.append('jobDescription', emptyBlob, 'empty_jd.txt')
+      }
+
+      // 3. Dispatch the Network Payload to your Spring Boot Server URL
+      const BACKEND_URL = 'http://localhost:8080/api/ats/analyze'
+
+      const response = await fetch(BACKEND_URL, {
+        method: 'POST',
+        body: formData, // ◄ DO NOT set headers! Browser auto-generates 'multipart/form-data' with boundaries
       })
+
+      if (!response.ok) {
+        throw new Error(`Server returned an error status: ${response.status}`)
+      }
+
+      // 4. Extract the JSON Payload coming from ETLresult.class
+      const data = await response.json()
+
+      // 5. Map the Backend JSON Keys to your Frontend State Object Structure
+      setAnalysisResults({
+        score: data.alignmentScore || 0,
+        feedback: data.generalRecommendations || [],
+        strengths: data.matchedSkills?.map((s: string) => `Strong alignment with skill: ${s}`) || [],
+        improvements: data.missingKeywords?.map((k: string) => `Consider adding missing keyword: ${k}`) || [],
+        parsedText: await extractTextFromPDF(uploadedFile), // Maintain the original text for local view
+        keywords: data.matchedSkills || [],
+        matchedRequirements: data.matchedSkills || [],
+        missingRequirements: data.missingKeywords || [],
+
+        // Populate the Gemini Optimization UI slots!
+        optimizedText: data.optimizedResults || '',
+        furtherSuggestions: data.generalRecommendations || [],
+        keywordsAdded: data.missingKeywords || [],
+        changesApplied: []
+      })
+
+      // Switch view panes smoothly
       setView('results')
       setMainTab('overview')
+
     } catch (error) {
-      console.error('Error analyzing resume:', error)
-      alert('Failed to parse PDF. Please try another file.')
+      console.error('Error connecting to the ATS analysis backend service:', error)
+      alert('Failed to analyze resume with our AI backend. Please verify your Spring Boot server is running on port 8080.')
     } finally {
       setIsAnalyzing(false)
     }
